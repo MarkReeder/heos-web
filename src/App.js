@@ -72,7 +72,7 @@ function MyComponent() {
                   playersObj[player.pid] = player;
                   return playersObj;
               }, {}))
-              setActiveKey(data.payload[1].pid)
+              setActiveKey(data.payload[0].pid)
           }
           if (commandGroup === "player" && command === "get_now_playing_media") {
               const updatedPlayers = {...players};
