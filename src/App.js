@@ -72,7 +72,11 @@ function MyComponent() {
                   playersObj[player.pid] = player;
                   return playersObj;
               }, {}))
-              setActiveKey(data.payload[0].pid)
+              if (localStorage.getItem('activePlayerPid') !== null) {
+                  setActiveKey(localStorage.getItem('activePlayerPid'))
+              } else {
+                  setActiveKey(data.payload[0].pid)
+              }
           }
           if (commandGroup === "player" && command === "get_now_playing_media") {
               const updatedPlayers = {...players};
@@ -111,6 +115,7 @@ function MyComponent() {
           activeKey={activeKey}
           onChange={({ activeKey }) => {
               setActiveKey(activeKey);
+              localStorage.setItem('activePlayerPid', activeKey)
           }}
           activateOnFocus
       >
