@@ -1,4 +1,4 @@
-This is a web interface for Denon's HEOS system. It consists of a server component that consumes [heos-api](https://github.com/juliuscc/heos-api) and sends SSE. The client portion uses React and Base Web. For now the interface is view only.
+This is a web interface for Denon's HEOS system. It consists of a server component that consumes [heos-api](https://github.com/juliuscc/heos-api) and sends SSE. The client portion uses React and Base Web. The interface currently shows basic now playing information and has basic transport and volume control functionality.
 
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
