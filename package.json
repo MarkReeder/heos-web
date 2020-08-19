@@ -9,6 +9,8 @@
     "baseui": "^9.95.1",
     "heos-api": "^4.0.0",
     "just-safe-get": "^2.0.0",
+    "koa": "^2.13.0",
+    "koa-sse-stream": "^0.2.0",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-scripts": "3.4.3",
@@ -19,7 +21,7 @@
     "styletron-react": "^5.2.7"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "concurrently --kill-others \"node server/index.js\" \"react-scripts start\"",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
@@ -39,5 +41,8 @@
       "last 1 safari version"
     ]
   },
-  "proxy": "http://localhost:8080/"
+  "proxy": "http://localhost:8080/",
+  "devDependencies": {
+    "concurrently": "^5.3.0"
+  }
 }
