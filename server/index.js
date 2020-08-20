@@ -116,6 +116,37 @@ app
                 heosConnection.write('player', 'set_volume', {pid, level})
                 break;
             }
+            case '/browse/get_music_sources': {
+                heosConnection.write('browse', 'get_music_sources')
+                break;
+            }
+            case '/browse/get_source_info': {
+                const sid = ctx.request.query.sid
+                heosConnection.write('browse', 'get_source_info', {sid})
+                break;
+            }
+            case '/browse/browse': {
+                const browseObj = {sid: ctx.request.query.sid}
+                const cid = ctx.request.query.cid
+                if (cid !== undefined) {
+                    browseObj.cid = cid
+                }
+                const startItem = ctx.request.query.startItem
+                if (startItem !== undefined) {
+                    browseObj.range = `${startItem},100`
+                }
+                heosConnection.write('browse', 'browse', browseObj)
+                break;
+            }
+            case '/browse/add_to_queue': {
+                const pid = ctx.request.query.pid
+                const sid = ctx.request.query.sid
+                const cid = ctx.request.query.cid
+                const mid = ctx.request.query.mid
+                const aid = ctx.request.query.aid
+                heosConnection.write('browse', 'add_to_queue', {pid, sid, cid, mid, aid})
+                break;
+            }
             default: {
                 ctx.status = 404;
                 ctx.body = "NOT FOUND";

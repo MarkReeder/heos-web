@@ -1,6 +1,17 @@
 import React, {useEffect, useState} from 'react';
 import get from 'just-safe-get';
-import {styled} from 'baseui';
+import {styled, withStyle} from 'baseui';
+
+import {
+    Modal,
+    ModalHeader,
+    ModalBody as BaseModalBody,
+    ModalFooter,
+    ModalButton,
+    SIZE,
+    ROLE
+} from 'baseui/modal';
+import {KIND as ButtonKind} from 'baseui/button';
 
 import {Scrubber} from "react-scrubber";
 import 'react-scrubber/lib/scrubber.css';
@@ -8,6 +19,11 @@ import 'react-scrubber/lib/scrubber.css';
 import {Tabs, Tab} from 'baseui/tabs-motion';
 
 const es = new EventSource("/sse");
+const evtNode = document.body
+
+const ModalBody = withStyle(BaseModalBody, {
+    backgroundColor: '#111'
+})
 
 const useAnimationFrame = callback => {
     // Use useRef for mutable variables that we want to persist
@@ -77,6 +93,12 @@ function HEOS() {
           const data = JSON.parse(event.data);
           const commandGroup = get(data, 'heos.command.commandGroup')
           const command = get(data, 'heos.command.command')
+          // console.log({command, commandGroup, data})
+          if (commandGroup === "browse") {
+              const browseEvent = new CustomEvent('browse', {bubbles: false, detail: data})
+              console.log('dispatching')
+              evtNode.dispatchEvent(browseEvent)
+          }
           if (commandGroup === "player" && command === "get_players") {
               setPlayers(data.payload.reduce((playersObj, player) => {
                   playersObj[player.pid] = player;
@@ -154,6 +176,103 @@ function HEOS() {
           })}
       </Tabs>
   );
+}
+
+function browseSources() {
+    fetch('/browse/get_music_sources')
+}
+
+function browseSource(sid) {
+    fetch(`browse/browse?sid=${sid}`)
+}
+
+function browseItem(sid, cid, startItem = 0) {
+    if (sid) {
+        if (!cid) {
+            fetch(`browse/browse?sid=${sid}`)
+            return;
+        }
+
+        fetch(`browse/browse?sid=${sid}&cid=${cid}&startItem=${startItem}`)
+    }
+}
+
+function playItem(sid, cid, mid, aid, pid) {
+    fetch(`browse/add_to_queue?pid=${pid}&sid=${sid}&cid=${cid}&mid=${mid}&aid=${aid}`)
+}
+
+const BrowseItem = styled('a', {
+    color: '#fff',
+    textDecoration: 'none',
+    display: 'block',
+})
+
+function BrowseModal({pid}) {
+    const [isModalOpen, setIsModalOpen] = React.useState(false);
+    const [sources, setSources] = useState({});
+    const [sourceId, setSourceId] = useState(null)
+    const [containerId, setContainerId] = useState(null)
+    const [startItem, setStartItem] = useState(0)
+
+    useEffect(() => {
+        evtNode.addEventListener('browse', (evt) => {
+            if (get(evt, 'detail.heos.command.command') === 'get_music_sources') {
+                setSources(evt.detail.payload)
+                setIsModalOpen(true)
+            }
+            if (get(evt, 'detail.heos.command.command') === 'browse') {
+                setSources(evt.detail.payload)
+            }
+        })
+    }, [])
+    return (
+        <Modal
+            onClose={() => {
+                setIsModalOpen(false);
+                setSourceId(null)
+                setContainerId(null)
+                setStartItem(0)
+            }}
+            closeable
+            isOpen={isModalOpen}
+            animate
+            autoFocus
+            size={SIZE.default}
+            role={ROLE.dialog}
+            style={{
+                backgroundColor: '#111'
+            }}
+        >
+            <ModalHeader>Browse</ModalHeader>
+            <ModalBody style={{display: 'flex', flexWrap: 'wrap', flexDirection: sourceId === null ? 'row' : 'column'}}>
+                {sourceId === null && sources && Object.values(sources).map(source => (
+                        <div>
+                            <a href="#" onClick={(evt) => {evt.preventDefault(); setSourceId(source.sid); browseSource(source.sid)}}><img src={source.image_url} alt={source.name} style={{maxWidth: '10em', maxHeight: '10em', padding: '1em'}} /></a>
+                        </div>
+                ))}
+                {sourceId !== null && sources && Object.values(sources).map(item => {
+                    if (item.sid) {
+                        return (
+                            <BrowseItem href="#" onClick={(evt) => {evt.preventDefault(); setSourceId(item.sid); browseItem(item.sid);}}>{item.name}</BrowseItem>
+                        )
+                    }
+                    if (item.cid) {
+                        return (
+                            <BrowseItem href="#" onClick={(evt) => {evt.preventDefault(); setContainerId(item.cid); browseItem(sourceId, item.cid, startItem);}}>{item.name}</BrowseItem>
+                        )
+                    }
+                    if (item.mid) {
+                        return (
+                            <BrowseItem href="#" onClick={(evt) => {
+                                evt.preventDefault();
+                                playItem(sourceId, containerId, item.mid, 1 /*play now*/, pid);
+                            }}>{item.name}</BrowseItem>
+                        )
+                    }
+                })}
+            </ModalBody>
+        </Modal>
+    );
 }
 
 function SongMetadata({nowPlaying}) {
@@ -293,6 +412,7 @@ function PlayerInfo({player}) {
                     onScrubChange={handleVolumeScrubChange}
                     onScrubEnd={handleVolumeScrubEnd}
                 />
+                <a href="#" onClick={(evt) => {evt.preventDefault(); browseSources();}}>🎵</a>
             </VolumeScrubberContainer>
             <AlbumInfoContainer>
                 <img alt={`${player.nowPlaying.artist} - ${player.nowPlaying.album}`} src={player.nowPlaying.image_url} />
@@ -300,6 +420,7 @@ function PlayerInfo({player}) {
             </AlbumInfoContainer>
 
             <Position nowPlaying={player.nowPlaying} />
+            <BrowseModal pid={player.pid} />
         </>
     )
 }
